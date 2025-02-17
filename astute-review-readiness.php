@@ -9,6 +9,7 @@ Author: Astute Communications
 
 class AstuteReviewReadiness {
     private $allowed_post_types = [];
+    private $current_page_id = 0;
 
     public function __construct() {
         add_action('init', [$this, 'determine_allowed_post_types']);
@@ -74,6 +75,9 @@ class AstuteReviewReadiness {
     }
 
     public function generate_review_trees($atts) {
+        global $post;
+        $this->current_page_id = $post->ID;
+        
         $output = '';
         
         foreach ($this->allowed_post_types as $post_type) {
@@ -105,8 +109,13 @@ class AstuteReviewReadiness {
             echo '<ul class="astute-page-tree">';
             while ($pages_query->have_posts()) {
                 $pages_query->the_post();
+                $current_id = get_the_ID();
                 
-                $review_status = get_post_meta(get_the_ID(), '_astute_ready_for_review', true);
+                if ($current_id === $this->current_page_id) {
+                    continue;
+                }
+                
+                $review_status = get_post_meta($current_id, '_astute_ready_for_review', true);
                 $link_text = get_the_title();
 
                 echo '<li>';
@@ -117,8 +126,7 @@ class AstuteReviewReadiness {
                     echo esc_html($link_text);
                 }
 
-                // Recursively get child pages
-                echo $this->generate_single_tree($post_type, get_the_ID());
+                echo $this->generate_single_tree($post_type, $current_id);
 
                 echo '</li>';
             }
